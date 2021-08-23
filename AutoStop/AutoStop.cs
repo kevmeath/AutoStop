@@ -1,30 +1,40 @@
 ﻿using System;
 using System.Threading;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using TShockAPI;
+using TShockAPI.Configuration;
 using Terraria;
 using TerrariaApi.Server;
 
-namespace AutoExit
+namespace AutoStop
 {
     [ApiVersion(2, 1)]
     public class AutoStop : TerrariaPlugin
     {
         public override string Author => "Kevin Meath";
 
-        public override string Description => "" +
-            "A TShock plugin that automatically stops the server while it's empty to save power.";
+        public override string Description => "A TShock plugin that automatically stops the server while it's empty to save power.";
 
         public override string Name => "Auto Stop";
 
         public override Version Version => new Version(1, 0, 0, 0);
 
+        private ConfigFile<AutoStopConfig> config;
+
         public AutoStop(Main game) : base(game) {}
 
         public override void Initialize()
         {
+            // Read config
+            config = new ConfigFile<AutoStopConfig>();
+            config.Read(AutoStopConfig.FilePath, out bool readFail);
+
+            // Load default if read failed
+            if (readFail)
+            {
+                config.Write(AutoStopConfig.FilePath);
+                config.Settings.Delay = 600000;
+            }
+
             // Register hooks
             ServerApi.Hooks.ServerJoin.Register(this, OnPlayerJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnPlayerLeave);
@@ -53,15 +63,15 @@ namespace AutoExit
         {
             if (TShock.Utils.GetActivePlayerCount() == 1)
             {
-                exitTimerThread.Start();
+                exitTimerThread.Start(config.Settings.Delay);
             }
         }
 
         private readonly Thread exitTimerThread = new Thread(ExitTimer);
 
-        private static void ExitTimer()
+        private static void ExitTimer(object time)
         {
-            Thread.Sleep(600000);
+            Thread.Sleep((int) time);
             TShock.Utils.StopServer();
         }
     }
