@@ -47,6 +47,9 @@ namespace AutoStop
                 // Deregister hooks
                 ServerApi.Hooks.ServerJoin.Deregister(this, OnPlayerJoin);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnPlayerLeave);
+
+                // Abort timer thread to prevent sleeping after the server is manually stopped
+                exitTimerThread.Abort();
             }
             base.Dispose(disposing);
         }
