@@ -66,11 +66,12 @@ namespace AutoStop
         {
             if (TShock.Utils.GetActivePlayerCount() == 1)
             {
+                exitTimerThread = new Thread(ExitTimer);
                 exitTimerThread.Start(config.Settings.Delay);
             }
         }
 
-        private readonly Thread exitTimerThread = new Thread(ExitTimer);
+        private Thread exitTimerThread = new Thread(ExitTimer);
 
         private static void ExitTimer(object time)
         {
