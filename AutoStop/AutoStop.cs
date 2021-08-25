@@ -33,12 +33,12 @@ namespace AutoStop
             if (readFail)
             {
                 config.Write(AutoStopConfig.FilePath);
-                config.Settings.Delay = 600000;
             }
 
             // Register hooks
             ServerApi.Hooks.ServerJoin.Register(this, OnPlayerJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnPlayerLeave);
+            ServerApi.Hooks.GamePostInitialize.Register(this, OnGameReady);
         }
 
         protected override void Dispose(bool disposing)
@@ -48,10 +48,20 @@ namespace AutoStop
                 // Deregister hooks
                 ServerApi.Hooks.ServerJoin.Deregister(this, OnPlayerJoin);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnPlayerLeave);
+                ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGameReady);
 
                 cancellationTokenSource.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        private void OnGameReady(EventArgs eventArgs)
+        {
+            // Check if the plugin is configured to stop the server before the first player joins
+            if (config.Settings.StopBeforeFirstJoin)
+            {
+                ScheduleServerShutdown();
+            }
         }
 
         private void OnPlayerJoin(JoinEventArgs joinEventArgs)
