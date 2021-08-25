@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using TShockAPI;
 using TShockAPI.Configuration;
 using Terraria;
@@ -48,35 +49,40 @@ namespace AutoStop
                 ServerApi.Hooks.ServerJoin.Deregister(this, OnPlayerJoin);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnPlayerLeave);
 
-                // Abort timer thread to prevent sleeping after the server is manually stopped
-                exitTimerThread.Abort();
+                cancellationTokenSource.Dispose();
             }
             base.Dispose(disposing);
         }
 
         private void OnPlayerJoin(JoinEventArgs joinEventArgs)
         {
-            if (exitTimerThread.IsAlive)
+            // Cancel shutdown if it hasn't already been cancelled
+            if (!cancellationTokenSource.IsCancellationRequested)
             {
-                exitTimerThread.Abort();
+                cancellationTokenSource.Cancel();
             }
         }
 
         private void OnPlayerLeave(LeaveEventArgs leaveEventArgs)
         {
+            // Schedule server shutdown if the last player leaves
+            // Check for 1 player rather than 0 becuase this is called just before the player leaves
             if (TShock.Utils.GetActivePlayerCount() == 1)
             {
-                exitTimerThread = new Thread(ExitTimer);
-                exitTimerThread.Start(config.Settings.Delay);
+                ScheduleServerShutdown();
             }
         }
 
-        private Thread exitTimerThread = new Thread(ExitTimer);
+        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-        private static void ExitTimer(object time)
+        private void ScheduleServerShutdown()
         {
-            Thread.Sleep((int) time);
-            TShock.Utils.StopServer();
+            // Replace old cancelled token source
+            cancellationTokenSource = new CancellationTokenSource();
+
+            // Shutdown the server after the configured time
+            Task.Delay(config.Settings.Delay, cancellationTokenSource.Token)
+                .ContinueWith(t => TShock.Utils.StopServer(), cancellationTokenSource.Token);
         }
     }
 }
