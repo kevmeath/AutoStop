@@ -35,6 +35,13 @@ namespace AutoStop
                 config.Write(AutoStopConfig.FilePath);
             }
 
+            // Check for invalid delay
+            if (config.Settings.Delay < 0)
+            {
+                Console.WriteLine("[AutoStop] Delay must be greater than or equal to 0. Resetting to default value.");
+                config.Settings.Delay = 600000;
+            }
+
             // Register hooks
             ServerApi.Hooks.ServerJoin.Register(this, OnPlayerJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnPlayerLeave);
