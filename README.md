@@ -7,11 +7,16 @@ This plugin stops the server after a configured delay when the last player leave
 3. Place AutoStop.dll in `<your_server_folder>/ServerPlugins`
 
 ## Configuration
-After the first run a configuration file will be created at `<your_server_folder>/tshock/AutoStop.json`. Here you can set the delay in **milliseconds** before the server stops. The default is 10 minutes.
+After the first run a configuration file will be created at `<your_server_folder>/tshock/AutoStop.json`
 ```
 {
   "Settings": {
     "Delay": 600000
+    "StopBeforeFirstJoin": false
   }
 }
 ```
+Attribute | Description | Default Value
+-|-|-
+Delay | Time in **milliseconds** before the server is stopped | 600000
+StopBeforeFirstJoin | Whether or not the server should be stopped before the first player joins | false
