@@ -17,11 +17,13 @@ namespace AutoStop
 
         public override string Name => "Auto Stop";
 
-        public override Version Version => new Version(1, 0, 0, 0);
+        public override Version Version => new Version(1, 1, 0, 0);
 
         private ConfigFile<AutoStopConfig> config;
 
-        public AutoStop(Main game) : base(game) {}
+        private ScheduledShutdown scheduledShutdown;
+
+        public AutoStop(Main game) : base(game) { }
 
         public override void Initialize()
         {
@@ -57,7 +59,7 @@ namespace AutoStop
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnPlayerLeave);
                 ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGameReady);
 
-                cancellationTokenSource.Dispose();
+                scheduledShutdown.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -67,16 +69,17 @@ namespace AutoStop
             // Check if the plugin is configured to stop the server before the first player joins
             if (config.Settings.StopBeforeFirstJoin)
             {
-                ScheduleServerShutdown();
+                ScheduleShutdown();
             }
         }
 
         private void OnPlayerJoin(JoinEventArgs joinEventArgs)
         {
-            // Cancel shutdown if it hasn't already been cancelled
-            if (!cancellationTokenSource.IsCancellationRequested)
+            // Cancel shutdown when a player joins
+            if (scheduledShutdown != null)
             {
-                cancellationTokenSource.Cancel();
+                scheduledShutdown.Cancel();
+                scheduledShutdown.Dispose();
             }
         }
 
@@ -86,20 +89,37 @@ namespace AutoStop
             // Check for 1 player rather than 0 becuase this is called just before the player leaves
             if (TShock.Utils.GetActivePlayerCount() == 1)
             {
-                ScheduleServerShutdown();
+                ScheduleShutdown();
             }
         }
 
-        private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-
-        private void ScheduleServerShutdown()
+        private void ScheduleShutdown()
         {
-            // Replace old cancelled token source
-            cancellationTokenSource = new CancellationTokenSource();
+            scheduledShutdown = new ScheduledShutdown(config.Settings.Delay);
+        }
+    }
 
-            // Shutdown the server after the configured time
-            Task.Delay(config.Settings.Delay, cancellationTokenSource.Token)
+    // Class for scheduled shutdowns with IDisposable to avoid wasting resources with canceled shutdowns
+    public class ScheduledShutdown : IDisposable
+    {
+        // Cancellation token for cancelling the shutdown when a player joins
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+        // Shutdown the server after the given delay (milliseconds)
+        public ScheduledShutdown(int delay)
+        {
+            Task.Delay(delay, cancellationTokenSource.Token)
                 .ContinueWith(t => TShock.Utils.StopServer(), cancellationTokenSource.Token);
+        }
+
+        public void Cancel()
+        {
+            cancellationTokenSource.Cancel();
+        }
+        
+        public void Dispose()
+        {
+            cancellationTokenSource.Dispose();
         }
     }
 }
