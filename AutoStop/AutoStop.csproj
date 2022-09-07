@@ -2,6 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>net452</TargetFramework>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
+    <Version>1.2.0.0</Version>
+    <Authors>Kevin Meath</Authors>
+    <Company />
   </PropertyGroup>
 
   <ItemGroup>

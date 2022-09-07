@@ -15,11 +15,13 @@ namespace AutoStop
 
         public override string Description => "A TShock plugin that automatically stops the server while it's empty to save power.";
 
-        public override string Name => "Auto Stop";
+        public override string Name => "AutoStop";
 
-        public override Version Version => new Version(1, 1, 0, 0);
+        public override Version Version => new Version(1, 2, 0, 0);
 
         private ConfigFile<AutoStopConfig> config;
+
+        private int delay;
 
         private ScheduledShutdown scheduledShutdown;
 
@@ -40,9 +42,11 @@ namespace AutoStop
             // Check for invalid delay
             if (config.Settings.Delay < 0)
             {
-                Console.WriteLine("[AutoStop] Delay must be greater than or equal to 0. Resetting to default value.");
+                TShock.Log.ConsoleInfo("Delay must be greater than or equal to 0. Resetting to default value.");
                 config.Settings.Delay = 600000;
             }
+
+            delay = config.Settings.Delay;
 
             // Register hooks
             ServerApi.Hooks.ServerJoin.Register(this, OnPlayerJoin);
@@ -75,11 +79,10 @@ namespace AutoStop
 
         private void OnPlayerJoin(JoinEventArgs joinEventArgs)
         {
-            // Cancel shutdown when a player joins
+            // Cancel shutdown when a player joins after shutdown has been scheduled
             if (scheduledShutdown != null)
             {
-                scheduledShutdown.Cancel();
-                scheduledShutdown.Dispose();
+                CancelShutdown();
             }
         }
 
@@ -95,7 +98,15 @@ namespace AutoStop
 
         private void ScheduleShutdown()
         {
-            scheduledShutdown = new ScheduledShutdown(config.Settings.Delay);
+            TShock.Log.ConsoleInfo($"Server is empty, shutting down after {delay} milliseconds.");
+            scheduledShutdown = new ScheduledShutdown(delay);
+        }
+
+        private void CancelShutdown()
+        {
+            TShock.Log.ConsoleInfo("Scheduled server shutdown cancelled.");
+            scheduledShutdown.Cancel();
+            scheduledShutdown.Dispose();
         }
     }
 
