@@ -17,7 +17,7 @@ namespace AutoStop
 
         public override string Name => "AutoStop";
 
-        public override Version Version => new Version(1, 2, 0, 0);
+        public override Version Version => new(1, 2, 0, 0);
 
         private ConfigFile<AutoStopConfig> config;
 
@@ -82,7 +82,7 @@ namespace AutoStop
             // Cancel shutdown when a player joins after shutdown has been scheduled
             if (scheduledShutdown != null)
             {
-                CancelShutdown();
+                CancelScheduledShutdown();
             }
         }
 
@@ -102,7 +102,7 @@ namespace AutoStop
             scheduledShutdown = new ScheduledShutdown(delay);
         }
 
-        private void CancelShutdown()
+        private void CancelScheduledShutdown()
         {
             TShock.Log.ConsoleInfo("Scheduled server shutdown cancelled.");
             scheduledShutdown.Cancel();
@@ -114,7 +114,7 @@ namespace AutoStop
     public class ScheduledShutdown : IDisposable
     {
         // Cancellation token for cancelling the shutdown when a player joins
-        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource cancellationTokenSource = new();
 
         // Shutdown the server after the given delay (milliseconds)
         public ScheduledShutdown(int delay)
@@ -130,7 +130,9 @@ namespace AutoStop
         
         public void Dispose()
         {
+            Cancel();
             cancellationTokenSource.Dispose();
-        }
+			GC.SuppressFinalize(this);
+		}
     }
 }
