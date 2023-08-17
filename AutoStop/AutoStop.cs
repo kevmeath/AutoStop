@@ -17,7 +17,7 @@ namespace AutoStop
 
         public override string Name => "AutoStop";
 
-        public override Version Version => new(1, 2, 0, 0);
+        public override Version Version => new(1, 3, 0, 0);
 
         private ConfigFile<AutoStopConfig> config;
 
