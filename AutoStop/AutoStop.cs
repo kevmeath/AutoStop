@@ -63,8 +63,11 @@ namespace AutoStop
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnPlayerLeave);
                 ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGameReady);
 
-                scheduledShutdown.Dispose();
-            }
+				if (scheduledShutdown != null)
+				{
+					CancelScheduledShutdown();
+				}
+			}
             base.Dispose(disposing);
         }
 
@@ -83,7 +86,8 @@ namespace AutoStop
             if (scheduledShutdown != null)
             {
                 CancelScheduledShutdown();
-            }
+				TShock.Log.ConsoleInfo("Scheduled server shutdown cancelled.");
+			}
         }
 
         private void OnPlayerLeave(LeaveEventArgs leaveEventArgs)
@@ -103,10 +107,9 @@ namespace AutoStop
         }
 
         private void CancelScheduledShutdown()
-        {
-            TShock.Log.ConsoleInfo("Scheduled server shutdown cancelled.");
-            scheduledShutdown.Cancel();
-            scheduledShutdown.Dispose();
+		{
+			scheduledShutdown.Cancel();
+			scheduledShutdown.Dispose();
         }
     }
 
@@ -130,7 +133,6 @@ namespace AutoStop
         
         public void Dispose()
         {
-            Cancel();
             cancellationTokenSource.Dispose();
 			GC.SuppressFinalize(this);
 		}
